@@ -104,15 +104,12 @@
       margin-top: 10px;
     }
   </style>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Shift Schedule" />
 </head>
-<!-- iOS -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/icons/apple-icon-180.png">
-
-<!-- Manifest -->
-<link rel="manifest" href="/manifest.json">
-
 <body>
   <div class="card">
     <h1>Monthly Shift Schedule</h1>
@@ -134,12 +131,30 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-  	navigator.serviceWorker.register('/sw.js')
-    .then(() => console.log('SW registration'))
-    .catch(err => console.log('SW ERROR', err));
-}
+    // 🔐 Supabase config (replace with your own)
+    const SUPABASE_URL = "https://lamsgobktlyodaaurjzu.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhbXNnb2JrdGx5b2RhYXVyanp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNDE0MzUsImV4cCI6MjA4NTYxNzQzNX0.8VFVNwTOC4U3VCBmWq9hJgruDQr_mr68eW84xcHoT3U";
+
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function saveCell(year, month, day, hour, value) {
+      await supabase
+        .from('schedule')
+        .upsert({ year, month, day, hour, value });
+    }
+
+    async function loadSchedule(year, month) {
+      const { data } = await supabase
+        .from('schedule')
+        .select('*')
+        .eq('year', year)
+        .eq('month', month);
+
+      return data || [];
+    }
+
 
     function generateSchedule() {
       const table = document.getElementById('scheduleTable');
@@ -167,8 +182,8 @@
       }
       table.appendChild(headerRow);
 
-      // Hours 0�23
-      for (let hour = 7; hour < 21; hour++) {
+      // Hours 0–23
+      for (let hour = 0; hour < 24; hour++) {
         const row = document.createElement('tr');
 
         const hourCell = document.createElement('td');
@@ -184,6 +199,14 @@
 
         table.appendChild(row);
       }
+    }
+        }
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
     }
   </script>
 </body>
