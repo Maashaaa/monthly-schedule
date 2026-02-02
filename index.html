@@ -135,6 +135,12 @@
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+  	navigator.serviceWorker.register('/sw.js')
+    .then(() => console.log('SW registration'))
+    .catch(err => console.log('SW ERROR', err));
+}
+
     function generateSchedule() {
       const table = document.getElementById('scheduleTable');
       table.innerHTML = '';
