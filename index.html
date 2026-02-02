@@ -139,6 +139,17 @@
 
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+
+    window.generateSchedule = async function generateSchedule() {
+      const table = document.getElementById('scheduleTable');
+      table.innerHTML = '';
+
+      const monthInput = document.getElementById('monthPicker').value;
+      if (!monthInput) {
+        alert('Please select a month.');
+        return;
+      }
+
     async function saveCell(year, month, day, hour, value) {
       await supabase
         .from('schedule')
@@ -154,17 +165,6 @@
 
       return data || [];
     }
-
-
-    window.generateSchedule = async function generateSchedule() {
-      const table = document.getElementById('scheduleTable');
-      table.innerHTML = '';
-
-      const monthInput = document.getElementById('monthPicker').value;
-      if (!monthInput) {
-        alert('Please select a month.');
-        return;
-      }
 
       const [year, month] = monthInput.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
