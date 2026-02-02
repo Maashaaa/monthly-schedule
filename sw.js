@@ -1,7 +1,7 @@
 const CACHE_NAME = 'shift-schedule-v1';
 const FILES_TO_CACHE = [
   './',
-  './grafik.html',
+  './index.html',
   './manifest.json'
 ];
 

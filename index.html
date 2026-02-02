@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Monthly Shift Schedule</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      margin-bottom: 15px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    input[type="month"] {
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 7px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background: #4f46e5;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .table-wrapper {
+      overflow: auto;
+      max-height: 70vh;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px;
+      text-align: center;
+      min-width: 40px;
+    }
+
+    th {
+      background: #f1f5f9;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .hour {
+      background: #f8fafc;
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 60px;
+    }
+
+    td[contenteditable="true"] {
+      cursor: text;
+    }
+
+    td[contenteditable="true"]:focus {
+      outline: 2px solid #6366f1;
+      background: #eef2ff;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #555;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Monthly Shift Schedule</h1>
+
+    <div class="controls">
+      <label>
+        Month:
+        <input type="month" id="monthPicker" />
+      </label>
+      <button onclick="generateSchedule()">Generate schedule</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="scheduleTable"></table>
+    </div>
+
+    <div class="hint">
+      Click a cell and type shift info (name, shift type, Off, etc.). Data is stored only in your browser.
+    </div>
+  </div>
+
+  <script>
+    function generateSchedule() {
+      const table = document.getElementById('scheduleTable');
+      table.innerHTML = '';
+
+      const monthInput = document.getElementById('monthPicker').value;
+      if (!monthInput) {
+        alert('Please select a month.');
+        return;
+      }
+
+      const [year, month] = monthInput.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      // Header row
+      const headerRow = document.createElement('tr');
+      const corner = document.createElement('th');
+      corner.textContent = 'Hour';
+      headerRow.appendChild(corner);
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const th = document.createElement('th');
+        th.textContent = day;
+        headerRow.appendChild(th);
+      }
+      table.appendChild(headerRow);
+
+      // Hours 0–23
+      for (let hour = 0; hour < 24; hour++) {
+        const row = document.createElement('tr');
+
+        const hourCell = document.createElement('td');
+        hourCell.textContent = hour + ':00';
+        hourCell.className = 'hour';
+        row.appendChild(hourCell);
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const cell = document.createElement('td');
+          cell.contentEditable = 'true';
+          row.appendChild(cell);
+        }
+
+        table.appendChild(row);
+      }
+    }
+  </script>
+</body>
+</html>
