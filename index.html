@@ -132,102 +132,93 @@
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script>
-    // 🔐 Supabase config (replace with your own)
-    const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY";
-
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-
-    window.generateSchedule = async function generateSchedule() {
-      const table = document.getElementById('scheduleTable');
-      table.innerHTML = '';
-
-      const monthInput = document.getElementById('monthPicker').value;
-      if (!monthInput) {
-        alert('Please select a month.');
-        return;
-      }
-
-    async function saveCell(year, month, day, hour, value) {
-      await supabase
-        .from('schedule')
-        .upsert({ year, month, day, hour, value });
-    }
-
-    async function loadSchedule(year, month) {
-      const { data } = await supabase
-        .from('schedule')
-        .select('*')
-        .eq('year', year)
-        .eq('month', month);
-
-      return data || [];
-    }
-
-      const [year, month] = monthInput.split('-').map(Number);
-      const daysInMonth = new Date(year, month, 0).getDate();
-
-      // load existing data
-      const saved = await loadSchedule(year, month);
-
-      // Header row
-      const headerRow = document.createElement('tr');
-      const corner = document.createElement('th');
-      corner.textContent = 'Hour';
-      headerRow.appendChild(corner);
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const th = document.createElement('th');
-        th.textContent = day;
-        headerRow.appendChild(th);
-      }
-      table.appendChild(headerRow);
-
-      for (let hour = 0; hour < 24; hour++) {
-        const row = document.createElement('tr');
-
-        const hourCell = document.createElement('td');
-        hourCell.textContent = hour + ':00';
-        hourCell.className = 'hour';
-        row.appendChild(hourCell);
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          const cell = document.createElement('td');
-          cell.contentEditable = 'true';
-
-          const existing = saved.find(r => r.day === day && r.hour === hour);
-          if (existing) cell.textContent = existing.value || '';
-
-          let timeout;
-          cell.addEventListener('input', () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-              saveCell(year, month, day, hour, cell.textContent);
-            }, 500);
-          });
-
-          row.appendChild(cell);
-        }
-        table.appendChild(row);
-      }
-    }
-        }
-    }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
-    }
-  </script>
 <script>
-  console.log("SCRIPT LOADED");
+const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY";
 
-  window.generateSchedule = function () {
-    alert("Generate works ✅");
-  };
+const supabase = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+async function saveCell(year, month, day, hour, value) {
+  await supabase
+    .from('schedule')
+    .upsert({ year, month, day, hour, value });
+}
+
+async function loadSchedule(year, month) {
+  const { data } = await supabase
+    .from('schedule')
+    .select('*')
+    .eq('year', year)
+    .eq('month', month);
+
+  return data || [];
+}
+
+window.generateSchedule = async function () {
+  const table = document.getElementById('scheduleTable');
+  table.innerHTML = '';
+
+  const monthInput = document.getElementById('monthPicker').value;
+  if (!monthInput) {
+    alert('Please select a month.');
+    return;
+  }
+
+  const [year, month] = monthInput.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const saved = await loadSchedule(year, month);
+
+  const headerRow = document.createElement('tr');
+  const corner = document.createElement('th');
+  corner.textContent = 'Hour';
+  headerRow.appendChild(corner);
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const th = document.createElement('th');
+    th.textContent = day;
+    headerRow.appendChild(th);
+  }
+  table.appendChild(headerRow);
+
+  for (let hour = 0; hour < 24; hour++) {
+    const row = document.createElement('tr');
+
+    const hourCell = document.createElement('td');
+    hourCell.textContent = hour + ':00';
+    hourCell.className = 'hour';
+    row.appendChild(hourCell);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement('td');
+      cell.contentEditable = 'true';
+
+      const existing = saved.find(
+        r => r.day === day && r.hour === hour
+      );
+      if (existing) cell.textContent = existing.value || '';
+
+      let timeout;
+      cell.addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          saveCell(year, month, day, hour, cell.textContent);
+        }, 500);
+      });
+
+      row.appendChild(cell);
+    }
+    table.appendChild(row);
+  }
+};
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
+
 </body>
 </html>
