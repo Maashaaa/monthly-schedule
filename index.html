@@ -7,21 +7,18 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#4f46e5" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Shift Schedule" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
     body {
       margin: 0;
       font-family: "Segoe UI", Arial, sans-serif;
       background: #f1f5f9;
-      color: #333;
     }
 
-    /* ===== App Header ===== */
     .app-header {
       position: fixed;
       top: 0;
@@ -31,8 +28,8 @@
       background: #4f46e5;
       color: white;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       padding: 0 16px;
       z-index: 10;
     }
@@ -40,7 +37,6 @@
     .app-header h1 {
       font-size: 16px;
       margin: 0;
-      font-weight: 600;
     }
 
     .app-header button {
@@ -53,14 +49,9 @@
       cursor: pointer;
     }
 
-    /* ===== Content ===== */
     .app-content {
-      padding-top: calc(56px + env(safe-area-inset-top));
+      padding-top: 70px;
       padding: 12px;
-    }
-
-    .controls {
-      margin-bottom: 10px;
     }
 
     input[type="month"] {
@@ -69,6 +60,7 @@
       font-size: 15px;
       border-radius: 8px;
       border: 1px solid #ccc;
+      margin-bottom: 12px;
     }
 
     .card {
@@ -79,21 +71,21 @@
     }
 
     .table-wrapper {
-      overflow: auto;
       max-height: 70vh;
+      overflow: auto;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
+      border-collapse: collapse;
       font-size: 13px;
     }
 
     th, td {
       border: 1px solid #e5e7eb;
       padding: 6px;
-      min-width: 40px;
       text-align: center;
+      min-width: 40px;
     }
 
     th {
@@ -121,7 +113,6 @@
       background: #eef2ff;
     }
 
-    /* ===== Toast ===== */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -133,7 +124,6 @@
       border-radius: 20px;
       opacity: 0;
       transition: opacity 0.3s;
-      pointer-events: none;
     }
 
     .toast.show {
@@ -150,9 +140,7 @@
 </header>
 
 <main class="app-content">
-  <div class="controls">
-    <input type="month" id="monthPicker">
-  </div>
+  <input type="month" id="monthPicker">
 
   <div class="card">
     <div class="table-wrapper">
@@ -165,6 +153,7 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
+/* ===== Supabase (можеш да ги смениш по-късно) ===== */
 const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
 const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY";
 
@@ -173,6 +162,7 @@ const supabase = supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+/* ===== UI Helpers ===== */
 function showToast(text) {
   const toast = document.getElementById('toast');
   toast.textContent = text;
@@ -180,22 +170,10 @@ function showToast(text) {
   setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-async function saveCell(year, month, day, hour, value) {
-  await supabase
-    .from('schedule')
-    .upsert({ year, month, day, hour, value });
-}
-
-async function loadSchedule(year, month) {
-  const { data } = await supabase
-    .from('schedule')
-    .select('*')
-    .eq('year', year)
-    .eq('month', month);
-  return data || [];
-}
-
+/* ===== Main Logic ===== */
 async function generateSchedule() {
+  console.log('Generate clicked');
+
   const table = document.getElementById('scheduleTable');
   table.innerHTML = '';
 
@@ -207,8 +185,6 @@ async function generateSchedule() {
 
   const [year, month] = monthInput.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-
-  const saved = await loadSchedule(year, month);
 
   const header = document.createElement('tr');
   const corner = document.createElement('th');
@@ -224,6 +200,7 @@ async function generateSchedule() {
 
   for (let h = 0; h < 24; h++) {
     const row = document.createElement('tr');
+
     const hourCell = document.createElement('td');
     hourCell.textContent = h + ':00';
     hourCell.className = 'hour';
@@ -232,41 +209,26 @@ async function generateSchedule() {
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = document.createElement('td');
       cell.contentEditable = true;
-
-      const existing = saved.find(r => r.day === d && r.hour === h);
-      if (existing) cell.textContent = existing.value || '';
-
-      let timeout;
-      cell.addEventListener('input', () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          saveCell(year, month, d, h, cell.textContent);
-        }, 400);
-      });
-
-      cell.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          cell.blur();
-        }
-      });
-
       row.appendChild(cell);
     }
+
     table.appendChild(row);
   }
 
-  showToast('Schedule loaded');
-};
+  showToast('Schedule generated');
+}
 
+/* ===== Events ===== */
+window.addEventListener('DOMContentLoaded', () => {
+  document
+    .getElementById('generateBtn')
+    .addEventListener('click', generateSchedule);
+});
+
+/* ===== Service Worker ===== */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
-window.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('generateBtn');
-  btn.addEventListener('click', generateSchedule);
-});
-
 </script>
 
 </body>
