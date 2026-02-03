@@ -146,7 +146,7 @@
 
 <header class="app-header">
   <h1>Shift Schedule</h1>
-  <button onclick="generateSchedule()">Generate</button>
+  <button id="generateBtn">Generate</button>
 </header>
 
 <main class="app-content">
@@ -195,7 +195,7 @@ async function loadSchedule(year, month) {
   return data || [];
 }
 
-window.generateSchedule = async function () {
+async function generateSchedule() {
   const table = document.getElementById('scheduleTable');
   table.innerHTML = '';
 
@@ -262,6 +262,11 @@ window.generateSchedule = async function () {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
+window.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('generateBtn');
+  btn.addEventListener('click', generateSchedule);
+});
+
 </script>
 
 </body>
