@@ -50,8 +50,7 @@
     }
 
     .app-content {
-      padding-top: 70px;
-      padding: 12px;
+      padding: 70px 12px 12px 12px;
     }
 
     input[type="month"] {
@@ -129,6 +128,15 @@
     .toast.show {
       opacity: 1;
     }
+
+    .weekend {
+      background: #f3f4f6 !important;
+    }
+
+    .today {
+      background: #fac7f7 !important;
+      font-weight: 700;
+    }
   </style>
 </head>
 
@@ -151,16 +159,13 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ===== Supabase (можеш да ги смениш по-късно) ===== */
-const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY";
+/* ===== Supabase Setup ===== */
+const SUPABASE_URL = "https://pemlicrwobfsggplfioa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlbWxpY3J3b2Jmc2dncGxmaW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTU1NTcsImV4cCI6MjA4NjQ3MTU1N30.qjBTPixAxatWb56Ul_nv-a8Tmn83zyhmIKEMnDIqnGA";
 
-const supabase = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ===== UI Helpers ===== */
 function showToast(text) {
@@ -171,6 +176,48 @@ function showToast(text) {
 }
 
 /* ===== Main Logic ===== */
+async function loadShifts(year, month) {
+  try {
+    const { data, error } = await sbClient
+      .from('shifts')
+      .select('*')
+      .eq('year', year)
+      .eq('month', month);
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn('Could not load shifts:', err);
+    return [];
+  }
+}
+
+async function saveShift(year, month, day, hour, employee) {
+  try {
+    const { data: existing } = await sbClient
+      .from('shifts')
+      .select('id')
+      .eq('year', year)
+      .eq('month', month)
+      .eq('day', day)
+      .eq('hour', hour)
+      .single();
+
+    if (existing) {
+      await sbClient
+        .from('shifts')
+        .update({ employee })
+        .eq('id', existing.id);
+    } else {
+      await sbClient
+        .from('shifts')
+        .insert([{ year, month, day, hour, employee }]);
+    }
+  } catch (err) {
+    console.error('Error saving shift:', err);
+  }
+}
+
 async function generateSchedule() {
   console.log('Generate clicked');
 
@@ -186,6 +233,31 @@ async function generateSchedule() {
   const [year, month] = monthInput.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
 
+  // Get current date
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
+  const currentDay = today.getDate();
+
+  // Helper functions
+  function getDayOfWeek(day) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const date = new Date(year, month - 1, day);
+    return days[date.getDay()];
+  }
+
+  function isWeekend(day) {
+    const date = new Date(year, month - 1, day);
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  }
+
+  // Load shifts from database
+  const shifts = await loadShifts(year, month);
+  const shiftMap = {};
+  shifts.forEach(s => {
+    shiftMap[`${s.day}-${s.hour}`] = s.employee || '';
+  });
+
   const header = document.createElement('tr');
   const corner = document.createElement('th');
   corner.textContent = 'Hour';
@@ -193,12 +265,19 @@ async function generateSchedule() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const th = document.createElement('th');
-    th.textContent = d;
+    const dayOfWeek = getDayOfWeek(d);
+    th.textContent = `${d} ${dayOfWeek}`;
+    if (isWeekend(d)) {
+      th.classList.add('weekend');
+    }
+    if (isCurrentMonth && d === currentDay) {
+      th.classList.add('today');
+    }
     header.appendChild(th);
   }
   table.appendChild(header);
 
-  for (let h = 0; h < 24; h++) {
+  for (let h = 7; h < 21; h++) {
     const row = document.createElement('tr');
 
     const hourCell = document.createElement('td');
@@ -209,6 +288,24 @@ async function generateSchedule() {
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = document.createElement('td');
       cell.contentEditable = true;
+      cell.textContent = shiftMap[`${d}-${h}`] || '';
+      
+      // Add weekend styling
+      if (isWeekend(d)) {
+        cell.classList.add('weekend');
+      }
+      
+      // Add today styling
+      if (isCurrentMonth && d === currentDay) {
+        cell.classList.add('today');
+      }
+      
+      // Save on blur
+      cell.addEventListener('blur', async (e) => {
+        await saveShift(year, month, d, h, e.target.textContent);
+        showToast('Shift saved');
+      });
+
       row.appendChild(cell);
     }
 
@@ -220,6 +317,15 @@ async function generateSchedule() {
 
 /* ===== Events ===== */
 window.addEventListener('DOMContentLoaded', () => {
+  // Set current month as default
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('monthPicker').value = `${year}-${month}`;
+  
+  // Auto-generate schedule for current month
+  generateSchedule();
+  
   document
     .getElementById('generateBtn')
     .addEventListener('click', generateSchedule);
@@ -230,6 +336,5 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 </script>
-
 </body>
 </html>
